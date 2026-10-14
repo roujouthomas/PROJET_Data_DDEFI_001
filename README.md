@@ -2,6 +2,3 @@
 
 groupe 123456
 
-(chef) Thomas Roujou
-(sous chef) Thomas Traineau; 
-(petite mains travailleuse) Martin Goy; 
