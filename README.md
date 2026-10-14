@@ -2,3 +2,5 @@
 
 groupe 123456
 
+Thomas Roujou : Chef
+Thomas Traineau : Chef plus petit
