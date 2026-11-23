@@ -16,7 +16,7 @@ Notre interlocuteur est **le responsable de la prévision de consommation**. C'e
 
 | Marqueur | Dans notre question |
 |---|---|
-| Une décision | la consommation horaire retenue la veille pour le lendemain, qui fixe le niveau de marges et de réserves programmées |
+| Une décision | la consommation horaire retenue la veille pour le lendemain ou la semaine précédente pour celle d'après, qui fixe le niveau de marges et de réserves programmées |
 | Une mesure | l'erreur absolue moyenne en MW par rapport au réalisé, et le coût des écarts qui en découle |
 | Un périmètre | la France métropolitaine, les 24 heures du lendemain, chaque jour |
 | Un responsable | le responsable de la prévision de consommation de RTE, qui signe ; le dispatcher, qui décide en temps réel |
@@ -30,7 +30,7 @@ Notre interlocuteur est **le responsable de la prévision de consommation**. C'e
 | **La métrique** | Pour le décideur : un coût asymétrique des écarts (sous-estimer coûte plus cher). Pour l'ingénieur : MAE en MW et en %, erreur moyenne signée. Seuil d'utilité : battre la prévision J-1 de RTE. |
 | **Les données** | RTE éCO₂mix national consolidé et définitif (ODRE), 2012-2026, Licence Ouverte v2.0, téléchargé par script avec empreinte SHA-256. Température et calendrier à ajouter. |
 | **Les garde-fous** | Uniquement des informations connues la veille à midi ; production, échanges et prévision J interdits sauf décalés de 24 h ; météo prévue et non réalisée ; décision humaine ; aucune donnée personnelle ; position AI Act à argumenter. |
-| **Les livrables** | Ce dépôt : `make reproduce`, tests et CI, `metrics.json`, comparaison naïf / OLS / LightGBM, fiche de modèle, fiche de données, analyse AI Act, mémo client, interface. |
+| **Les livrables** | Ce dépôt : `make reproduce`, tests et CI, `metrics.json`, comparaison Modèle linéaire / XG boost / Transformer/CNN, fiche de modèle, fiche de données, analyse AI Act, mémo client, interface. |
 
 Le détail de chaque ligne suit.
 
@@ -97,7 +97,7 @@ L'erreur de la prévision J-1 de RTE a presque doublé depuis 2022 : environ 800
 - **Meilleur (jalon 2, 29 janvier)** : une régression linéaire (OLS) sur le calendrier, la température et les consommations passées.
 - **Lourd (rendu final, février)** : un gradient boosting (LightGBM), comparé à l'OLS avec des intervalles de confiance. La règle de choix du modèle champion sera écrite avant les résultats.
 - **Coupe des données (proposition)** : entraînement 2012-2023, validation 2024, test 2025, fermé jusqu'au rendu final. 2020 (confinements) sera traitée à part.
-- **Qui fait quoi (proposition À VALIDER)** : Thomas Roujou, rôle Modèle ; Thomas Traineau, rôle Revue et IA ; Martin Goy, rôle Données. Les rôles tournent à chaque jalon.
+- **Qui fait quoi ** : Thomas Roujou, rôle Modèle ; Thomas Traineau, rôle Revue et IA ; Martin Goy, rôle Données. Les rôles tournent à chaque jalon.
 
 ## Ce que le projet ne fait pas
 
@@ -117,6 +117,6 @@ L'erreur de la prévision J-1 de RTE a presque doublé depuis 2022 : environ 800
 
 > Chaque membre écrit sa propre ligne : parcours, métier visé, pourquoi cette option, centres d'intérêt.
 
-- **Thomas Roujou** : À COMPLÉTER
+- **Thomas Roujou** : Étudiant en finance de marché spécialisé en structuration de produit dérivés et stratégies systamatique, avec un fort attrait pour le machine learning, je cherche à en apprendre plus sur l'analyse de données et la gestion d'un projet d'analyse automatique.
 - **Thomas Traineau** : À COMPLÉTER
 - **Martin Goy** : À COMPLÉTER
