@@ -92,10 +92,10 @@ L'erreur de la prévision J-1 de RTE a presque doublé depuis 2022 : environ 800
 
 ## 6. Le plan
 
-- **Naïf** : la consommation de la même heure une semaine avant (MAE d'environ 3 400 MW).
+- **Naïf** :regression linéaire simple avec un peu de régularisation étude d'impact de la météo ainsi que des différentes données (EDA).
 - **Référence métier** : la prévision J-1 de RTE, déjà dans les données.
-- **Meilleur (jalon 2, 29 janvier)** : une régression linéaire (OLS) sur le calendrier, la température et les consommations passées.
-- **Lourd (rendu final, février)** : un gradient boosting (LightGBM), comparé à l'OLS avec des intervalles de confiance. La règle de choix du modèle champion sera écrite avant les résultats.
+- **Meilleur (jalon 2, 29 janvier)** : un XGBoost sur le calendrier, la température (ou autres données météorologique qui sort du lot)  et les consommations passées.
+- **Lourd (rendu final, février)** : un réseau de neurone dont la forme sera adapté en fonction des besoins de previsions ( Transformer, TabPFN, CNN), comparé à l'XGBoost/LightGBM avec des intervalles de confiance. La règle de choix du modèle champion sera écrite avant les résultats.
 - **Coupe des données (proposition)** : entraînement 2012-2023, validation 2024, test 2025, fermé jusqu'au rendu final. 2020 (confinements) sera traitée à part.
 - **Qui fait quoi ** : Thomas Roujou, rôle Modèle ; Thomas Traineau, rôle Revue et IA ; Martin Goy, rôle Données. Les rôles tournent à chaque jalon.
 
