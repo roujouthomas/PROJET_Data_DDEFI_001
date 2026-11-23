@@ -21,6 +21,19 @@ Notre interlocuteur est **le responsable de la prévision de consommation**. C'e
 | Un périmètre | la France métropolitaine, les 24 heures du lendemain, chaque jour |
 | Un responsable | le responsable de la prévision de consommation de RTE, qui signe ; le dispatcher, qui décide en temps réel |
 
+## En six lignes
+
+| Ligne | Réponse |
+|---|---|
+| **La décision servie** | Chaque veille, le responsable de la prévision de RTE retient la consommation attendue pour les 24 heures du lendemain, qui fixe les marges et réserves programmées. |
+| **La cible** | `consommation` : consommation nationale réalisée, moyenne horaire en MW, horizon de 12 à 36 heures. |
+| **La métrique** | Pour le décideur : un coût asymétrique des écarts (sous-estimer coûte plus cher). Pour l'ingénieur : MAE en MW et en %, erreur moyenne signée. Seuil d'utilité : battre la prévision J-1 de RTE. |
+| **Les données** | RTE éCO₂mix national consolidé et définitif (ODRE), 2012-2026, Licence Ouverte v2.0, téléchargé par script avec empreinte SHA-256. Température et calendrier à ajouter. |
+| **Les garde-fous** | Uniquement des informations connues la veille à midi ; production, échanges et prévision J interdits sauf décalés de 24 h ; météo prévue et non réalisée ; décision humaine ; aucune donnée personnelle ; position AI Act à argumenter. |
+| **Les livrables** | Ce dépôt : `make reproduce`, tests et CI, `metrics.json`, comparaison naïf / OLS / LightGBM, fiche de modèle, fiche de données, analyse AI Act, mémo client, interface. |
+
+Le détail de chaque ligne suit.
+
 ## 1. La décision
 
 **Qui et quand.** La veille du jour J, à midi (**hypothèse de travail À VALIDER** : l'heure exacte de publication de la prévision J-1 de RTE est à confirmer), le responsable de la prévision publie la consommation attendue pour chacune des 24 heures de J. Cette prévision fixe le volume de marges et de réserves que RTE programme pour J.
@@ -85,6 +98,20 @@ L'erreur de la prévision J-1 de RTE a presque doublé depuis 2022 : environ 800
 - **Lourd (rendu final, février)** : un gradient boosting (LightGBM), comparé à l'OLS avec des intervalles de confiance. La règle de choix du modèle champion sera écrite avant les résultats.
 - **Coupe des données (proposition)** : entraînement 2012-2023, validation 2024, test 2025, fermé jusqu'au rendu final. 2020 (confinements) sera traitée à part.
 - **Qui fait quoi (proposition À VALIDER)** : Thomas Roujou, rôle Modèle ; Thomas Traineau, rôle Revue et IA ; Martin Goy, rôle Données. Les rôles tournent à chaque jalon.
+
+## Ce que le projet ne fait pas
+
+- Il ne prévoit pas la consommation régionale ni locale, seulement le total national.
+- Il ne pilote pas le réseau en temps réel : il sert la prévision de la veille, pas les ajustements infrajournaliers.
+- Il ne remplace pas le responsable de la prévision : il propose un chiffre que l'humain retient, combine ou écarte.
+- Il ne prévoit pas les prix de l'électricité ni la production par filière.
+
+## Les questions posées au commanditaire (réponses supposées, à confirmer)
+
+1. À quelle heure la prévision J-1 doit-elle être publiée ? Réponse supposée : la veille à midi (À VALIDER).
+2. Combien coûte un MW sous-estimé par rapport à un MW surestimé ? Pas encore répondu : à estimer à partir des prix de règlement des écarts publiés par RTE (À COMPLÉTER).
+3. La prévision J-1 publiée porte-t-elle sur la même définition de consommation que les données définitives ? Pas encore répondu : conditionne l'interprétation du biais observé depuis 2023 (À VÉRIFIER).
+4. Quelles prévisions météo étaient disponibles la veille, et peut-on y accéder en archive ? Pas encore répondu (À TRANCHER).
 
 ## Qui nous sommes vraiment
 
