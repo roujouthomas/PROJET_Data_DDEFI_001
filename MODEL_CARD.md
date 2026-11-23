@@ -1,16 +1,15 @@
 # Fiche de modèle (model card)
 
-D'après Mitchell et al. (2019), « Model Cards for Model Reporting ». Version 1 : le modèle de référence. Version 2 au jalon 2, avec l'audit d'équité.
+D'après Mitchell et al. (2019), « Model Cards for Model Reporting ». Version 1 : le modèle de référence. Version 2 au jalon 2, avec le modèle lourd.
 
 | | |
 |---|---|
-| Modèle | Régression logistique sur un Pipeline (standardisation, indicatrices), calibration de Platt sur la validation |
-| Usage prévu | Trier les demandes de renouvellement d'une ligne de crédit ; motiver une revue manuelle |
-| Usage exclu | Décision automatique sans revue ; tout autre pays, toute autre année ; fixer un montant |
-| Données d'entraînement | 18 000 clients (pli `train`), coupe figée, graine 20261015 |
-| Variables | 21 colonnes, `SEX` exclue, `ID` exclue |
-| Métriques sur la validation (6 000 clients) | voir `metrics.json` : AUC, log-loss, Brier, coût attendu au seuil 0,1176 |
-| Seuil | 0,1176, seuil d'indifférence pour c_fp = 600 €, c_fn = 4 500 € |
-| Limites connues | Trie mal les bas risques (courbe de coût plate) ; calibrée sur la validation, donc métriques de validation optimistes |
-| Équité | À faire au jalon 2 : taux de refus, taux de faux positifs et taux de vrais positifs par `MARRIAGE` et par tranche d'`AGE` |
-| Surveillance | À faire au jalon 3 : `MONITORING.md` (PSI par variable, dérive de la cible, alarme) |
+| Modèle | Régression linéaire (OLS) sur un Pipeline : indicatrices du calendrier, retards standardisés |
+| Usage prévu | Proposer au responsable de la prévision de RTE, la veille à midi, une consommation horaire nationale pour le lendemain |
+| Usage exclu | Décision automatique sans contrôle humain ; prévision régionale ; prévision infrajournalière ; événements exceptionnels |
+| Données d'entraînement | 104 988 heures de 2012 à 2023 (pli `train`), coupe chronologique figée |
+| Variables | `heure_type_jour` (heure × semaine, samedi, dimanche ou férié), `mois`, consommation à J-2 et à J-7 |
+| Métriques sur la validation (2024, 8 781 heures) | MAE 2 388 MW (4,8 %), biais +860 MW ; référence RTE J-1 : 1 428 MW (`metrics.json`) |
+| Limites connues | Pas de température : ne voit pas venir une vague de froid ou de chaleur. Ne bat pas encore la prévision J-1 de RTE. Surestime en moyenne en 2024 |
+| Équité | Pas de personnes dans les données ; à la place, erreur par saison, par type de jour et par heure, au jalon 2 |
+| Surveillance | À faire au jalon 3 : `MONITORING.md` |

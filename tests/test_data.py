@@ -1,17 +1,26 @@
 """Test 1, le contrat de schéma : les données qui entrent sont celles qu'on attend.
 
-Un test de ML n'est pas « l'AUC est bonne ». C'est une propriété qui doit être vraie quoi qu'il
-arrive : les bornes, les types, les manquants, le nombre de lignes.
+Un test de ML n'est pas « la MAE est bonne ». C'est une propriété qui doit être vraie quoi qu'il
+arrive : une ligne par heure, des bornes physiques, peu de manquants.
 """
 
-from credit.data import SCHEMA, TARGET
+import pandas as pd
+
+from energie.data import SCHEMA, TARGET, heures_attendues
 
 
-def test_schema_contract(raw):
+def test_schema_contract(raw, cfg):
     assert list(raw.columns) == SCHEMA["columns"]
-    assert len(raw) == SCHEMA["n_rows"]
-    assert raw["LIMIT_BAL"].min() > 0
-    assert raw[TARGET].isin([0, 1]).all()
-    assert raw.isna().mean().max() < 0.05
-    # Le taux de défaut connu du jeu UCI : 6 636 défauts sur 30 000, soit 22,12 %.
-    assert abs(raw[TARGET].mean() - 0.2212) < 0.001
+    # Une ligne par heure de 2012 à 2025, changements d'heure compris : 14 ans, 122 736 heures.
+    assert len(raw) == len(heures_attendues(cfg)) == 122_736
+    assert raw["date_heure"].is_monotonic_increasing and raw["date_heure"].is_unique
+    conso = raw[TARGET].dropna()
+    assert SCHEMA["conso_min_mw"] < conso.min() and conso.max() < SCHEMA["conso_max_mw"]
+    assert raw[TARGET].isna().sum() <= SCHEMA["max_heures_manquantes"]
+
+
+def test_hourly_index_follows_paris_time(cfg):
+    """La période commence le 1er janvier 2012 à minuit à Paris, soit 23 h UTC la veille."""
+    h = heures_attendues(cfg)
+    assert h[0] == pd.Timestamp("2011-12-31T23:00:00Z")
+    assert h[-1] == pd.Timestamp("2025-12-31T22:00:00Z")

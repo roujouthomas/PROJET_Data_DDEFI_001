@@ -10,12 +10,14 @@ fetch automatique pour recup la dernière version --> aller dans la case des com
 
 ---
 
-# Le gabarit du cours : score de défaut (fil rouge)
+# Prévision de la consommation électrique nationale (RTE éCO₂mix)
 
-Prédit, pour chaque client d'une banque, la probabilité qu'il fasse défaut le mois prochain,
-pour aider un analyste crédit à décider : accorder, refuser, ou revoir à la main.
+Prévoit, chaque veille à midi, la consommation électrique horaire de la France métropolitaine
+pour les 24 heures du lendemain, afin d'aider le responsable de la prévision de RTE à faire
+mieux que la prévision J-1 actuelle. Le cadrage complet est dans `docs/cahier-des-charges.md`.
 
-Données : « Default of Credit Card Clients » (UCI, 30 000 clients taïwanais, 2005, licence CC BY 4.0).
+Données : RTE, « Données éCO₂mix nationales consolidées et définitives » (plateforme ODRE),
+Licence Ouverte v2.0. On n'utilise que les données définitives 2012-2025.
 Elles ne sont pas dans le dépôt : un script les télécharge et vérifie leur empreinte.
 
 ## Lancer
@@ -23,8 +25,8 @@ Elles ne sont pas dans le dépôt : un script les télécharge et vérifie leur 
 ```bash
 python -m venv .venv && source .venv/bin/activate   # Windows : .venv\Scripts\activate
 pip install -r requirements.lock
-make reproduce        # télécharge, coupe, entraîne, mesure : metrics.json
-make test             # les cinq tests, moins d'une minute
+make reproduce        # télécharge (environ 30 Mo), coupe, entraîne, mesure : metrics.json
+make test             # les tests, quelques secondes une fois les données téléchargées
 ```
 
 `make reproduce` doit donner deux fois les mêmes chiffres, chez vous et chez l'équipe qui vous audite.
@@ -34,48 +36,48 @@ Si ce n'est pas le cas, l'un des quatre a bougé : données, code, graine, envir
 
 | Dossier | Contenu |
 |---|---|
-| `docs/cahier-des-charges.md` | la décision servie, en six lignes ; modifié par pull request |
+| `docs/cahier-des-charges.md` | la décision servie, en six lignes puis en détail ; modifié par pull request |
 | `docs/git-branches.md` | comment on travaille à plusieurs : branches, pull requests, revue, conflits, tags |
 | `DECISIONS.md` | le journal : une entrée datée par décision, avec l'alternative rejetée |
 | `data/README.md` | l'origine des données, la licence, l'empreinte SHA-256 |
-| `src/credit/` | le code qui compte : `data`, `split`, `features`, `model`, `evaluate`, `compare` |
+| `src/energie/` | le code qui compte : `data`, `split`, `features`, `model`, `evaluate`, `compare` |
+| `src/chargement_donnees.py` | la première exploration du jeu complet 2012-2026 (toutes les colonnes) |
 | `batch/` | les scripts de traitement par lots : préparer, entraîner, prédire, évaluer |
-| `notebooks/` | `00_guide.ipynb` (ce qui est à faire et ce qu'il ne faut pas faire), `01_exploration.ipynb`, `02_pourquoi-et-robustesse.ipynb` |
-| `tests/` | treize tests : contrat de schéma, coupe figée, propriétés du modèle, robustesse |
-| `app/` | une interface minimale : on entre un client, le modèle répond |
-| `config.yaml` | la graine, les coûts d'erreur, le seuil |
+| `notebooks/` | `01_exploration.ipynb`, `chargement_donnees.ipynb` |
+| `tests/` | contrat de schéma, coupe figée, absence de fuite, propriétés des modèles, robustesse |
+| `app/` | une interface minimale : on choisit un jour, on voit notre prévision, celle de RTE et le réalisé |
+| `config.yaml` | la graine, la période, la coupe par années, l'horizon, les retards, les colonnes interdites |
 | `metrics.json`, `compare.json` | ce que `make reproduce` et `make compare` produisent |
 
-## Les trois modèles
+## Les modèles
 
 | Niveau | Modèle | Où | Quand |
 |---|---|---|---|
-| naïf | le taux de base, 22,1 % pour tout le monde | `credit.model.naive` | fourni |
-| meilleur | régression logistique calibrée, seuillée par les coûts | `credit.model.train` | fourni, à défendre au jalon 1 |
-| lourd | gradient boosting (XGBoost) comparé honnêtement | `credit.model.heavy` | **à vous**, jalon 2 |
+| naïf | la consommation de la même heure une semaine avant | `energie.model.naive` | fait |
+| meilleur | régression linéaire (OLS) : heure × type de jour, mois, consommations à J-2 et J-7 | `energie.model.baseline` | fait, à enrichir (température) |
+| lourd | gradient boosting comparé honnêtement | `energie.model.heavy` | **à faire**, jalon 2 |
+| référence | la prévision J-1 publiée par RTE | colonne `prevision_j1` | le seuil d'utilité à battre |
 
-Le modèle lourd n'est pas écrit : la fonction existe et vous dit quoi faire. C'est le travail du jalon 2.
+Sur la validation (2024, `metrics.json`) :
 
-## Pourquoi un modèle, et comment on sait qu'il tient
+| Prévision | MAE | Biais moyen | Heures sous-estimées |
+|---|---|---|---|
+| Naïf (J-7) | 3 247 MW (6,5 %) | −163 MW | 49 % |
+| OLS, sans température | 2 388 MW (4,8 %) | +860 MW | 38 % |
+| **Prévision J-1 de RTE** | **1 428 MW (2,9 %)** | −1 146 MW | 82 % |
 
-Avant tout machine learning, une banque refuse déjà les clients en retard. Le modèle doit faire mieux que cette règle, en euros, et le prouver. Sur la validation, avec un refus à tort à 600 € :
-
-| Coût d'un défaut accepté | Meilleure règle métier (PAY_0 ≥ 1) | Logistique au meilleur seuil |
-|---|---|---|
-| 600 € | 133 € par dossier | 112 € |
-| 1 500 € | 227 € | 226 € |
-| 4 500 € (config.yaml) | 541 €, mais « refuser tout le monde » fait 467 € | 460 € |
-
-Le modèle bat la règle à chaque niveau de coût, de peu ; à 4 500 €, il fait à peine mieux que refuser tout le monde. **L'intérêt d'un modèle dépend des coûts d'erreur** : c'est au comité de les donner, et c'est au jalon 2 de faire mieux. Le détail, avec l'intervalle de confiance de l'AUC et six tests de robustesse (bruit, monotonie, valeurs absurdes, rééchantillonnage, tranches, dérive), est dans `notebooks/02_pourquoi-et-robustesse.ipynb` et `tests/test_robustness.py`.
+L'OLS bat nettement le naïf (le test `test_gain_over_naive_is_not_luck` le vérifie par bootstrap sur les jours),
+mais pas encore RTE. Il lui manque la température, premier moteur de la consommation (cahier des charges, ligne 5).
 
 ## Règles du dépôt
 
-- Les notebooks importent `src/credit`, ils ne le recopient pas.
-- Tout ce qui est appris (moyennes, coefficients, seuil) l'est sur le pli d'entraînement, jamais sur le jeu entier.
+- Les notebooks importent `src/energie`, ils ne le recopient pas.
+- Tout ce qui est appris (catégories, moyennes, coefficients) l'est sur le pli d'entraînement, jamais sur le jeu entier.
+- La coupe est chronologique : entraînement 2012-2023, validation 2024, test 2025. Jamais de coupe aléatoire sur une série temporelle.
+- Aucune variable postérieure à la veille midi : pas de production par filière, pas d'échanges, pas de prévision J, et `prevision_j1` n'est jamais une variable. `tests/test_leakage.py` le vérifie.
 - Le jeu de test ne se lit qu'une fois, à `make compare`, quand la règle du champion est écrite dans `DECISIONS.md`.
-- La variable `SEX` n'entre pas dans le modèle (garde-fou, directive 2004/113/CE) ; `MARRIAGE` est autorisée avec audit d'équité.
 - L'IA peut écrire du code ici ; à l'oral, vous devez pouvoir expliquer chaque ligne.
 
 ## Licence
 
-Code : MIT. Données : CC BY 4.0, Yeh et Lien (2009), UCI Machine Learning Repository.
+Code : MIT. Données : RTE, éCO₂mix, Licence Ouverte v2.0 (Etalab), via la plateforme ODRE.

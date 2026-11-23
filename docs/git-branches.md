@@ -25,7 +25,7 @@ git switch main && git pull                 # 1. partir de la dernière version 
 git switch -c features/ablation-pay         # 2. une branche par tâche, nommée par ce qu'elle fait
 # ... vous modifiez des fichiers ...
 git status                                  # 3. voir ce qui a changé
-git add src/credit/features.py tests/       # 4. choisir ce qui entre dans le commit
+git add src/energie/features.py tests/       # 4. choisir ce qui entre dans le commit
 git commit -m "Ablation : retirer les statuts de retard, mesurer l'AUC"   # 5. un message qui dit quoi et pourquoi
 git push -u origin features/ablation-pay    # 6. envoyer la branche sur GitHub
 ```

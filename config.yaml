@@ -1,23 +1,45 @@
-# Une seule graine pour tout le projet : la coupe, la validation croisée, les modèles.
+# Prévision de la consommation électrique nationale pour RTE (voir docs/cahier-des-charges.md).
+# Une seule graine pour tout le projet (modèle lourd, bootstrap des tests).
 seed: 20261015
 
-# La coupe figée (séance 1) : 60 % entraînement, 20 % validation, 20 % test, stratifiée sur la cible.
+# La période figée : données définitives uniquement (les consolidées de 2026 bougent encore).
+periode:
+  debut: "2012-01-01"
+  fin: "2025-12-31"
+
+# La coupe figée, par années civiles en heure de Paris. Jamais aléatoire : on prédit le futur
+# à partir du passé, donc la validation et le test sont postérieurs à l'entraînement.
 split:
-  train: 0.6
-  validation: 0.2
-  test: 0.2
+  train: [2012, 2023]
+  validation: [2024, 2024]
+  test: [2025, 2025]
 
-# Les coûts d'erreur (séance 4) : des hypothèses métier, écrites ici et justifiées dans DECISIONS.md.
-# Un bon client refusé coûte la marge perdue ; un défaut accepté coûte la perte attendue.
-costs:
-  c_fp: 600     # euros, refuser à tort un client qui aurait remboursé
-  c_fn: 4500    # euros, accepter un client qui fait défaut
+# La décision : la veille du jour J à midi (hypothèse À VALIDER, cahier des charges ligne 1),
+# on prévoit les 24 heures de J. L'horizon va donc de 12 h (minuit) à 36 h (23 h).
+# Une consommation n'est connue à l'heure de décision que si elle date d'au moins 36 h.
+horizon_max_heures: 36
 
-# Le seuil de décision : choisi sur le pli de validation par make reproduce (argmin du coût attendu),
-# puis figé ici. Il n'est pas 0,5 : avec ces coûts, le seuil d'indifférence vaut c_fp / (c_fp + c_fn).
-threshold: 0.1176
+# Les retards de consommation utilisés comme variables, en heures. Tous >= horizon_max_heures.
+lags_heures: [48, 168]
 
-# Les colonnes qui n'entrent jamais dans un modèle (garde-fous, séance 1).
+# Coût d'un MW sous-estimé divisé par le coût d'un MW surestimé.
+# À COMPLÉTER à partir des prix de règlement des écarts de RTE. Tant que c'est null,
+# le coût asymétrique n'est pas calculé : on n'invente pas de chiffre.
+ratio_cout_sous_sur: null
+
+# Les colonnes qui n'entrent jamais dans un modèle (garde-fous, cahier des charges ligne 4) :
+# prevision_j1 est la référence à battre, pas une variable ; les autres sont publiées en même
+# temps que la consommation à prédire.
 excluded_features:
-  - ID
-  - SEX
+  - consommation
+  - prevision_j1
+  - prevision_j
+  - nucleaire
+  - eolien
+  - solaire
+  - hydraulique
+  - gaz
+  - charbon
+  - fioul
+  - bioenergies
+  - ech_physiques

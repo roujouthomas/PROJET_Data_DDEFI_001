@@ -1,5 +1,5 @@
 {
-  "name": "credit-score",
+  "name": "prevision-consommation",
   "image": "mcr.microsoft.com/devcontainers/python:3.12",
   "postCreateCommand": "pip install -r requirements.lock",
   "customizations": {

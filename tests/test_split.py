@@ -1,26 +1,26 @@
-"""Test 2, la coupe figée : la même graine donne toujours les mêmes plis.
+"""Test 2, la coupe figée : toujours les mêmes plis, dans l'ordre du temps.
 
 Les empreintes attendues sont écrites ici en dur : si elles changent, quelqu'un a touché à la
-coupe, et il doit le dire dans DECISIONS.md avant de mettre ce test à jour.
+coupe ou aux données, et il doit le dire dans DECISIONS.md avant de mettre ce test à jour.
 """
 
-from credit.split import FOLDS, fold_hash, make_split
+from energie.split import FOLDS, fold_hash, make_split
 
 EXPECTED = {
-    "train": "adcf3e2a328c754645843c293b8f763edb848a3fc3b45fa91d29c81cef8fc0d9",
-    "validation": "8e7ab5fc23e3b391497f5857f7d237f2a17233805a5cff90d1edf7d86e5424c7",
-    "test": "38efbefd21811eea54be985d4beba3276310ce7f80b39bbb0679689c494fdbd6",
+    "train": "da956ceca5363d320c7bc25ce11336507675f2d7191129417f3ea65bd94d9bd8",
+    "validation": "9f071dc69ff291be56fbf9dbf70d376341594f0e8eaffb8b24d801c0a5abfe1c",
+    "test": "308deb1eaddb7df9778aa53f2456c854bfde21ae0a329c02f972a51253a94d0b",
 }
 
 
-def test_split_is_frozen(raw, cfg):
+def test_split_is_frozen_and_chronological(raw, cfg):
     folds = make_split(raw, cfg)
     sizes = {k: len(v) for k, v in folds.items()}
-    assert sizes == {"train": 18_000, "validation": 6_000, "test": 6_000}
-    ids = set()
+    assert sizes == {"train": 104_988, "validation": 8_781, "test": 8_757}
+    # Chronologique : toute heure d'entraînement précède toute heure de validation, etc.
+    assert folds["train"]["date_heure"].max() < folds["validation"]["date_heure"].min()
+    assert folds["validation"]["date_heure"].max() < folds["test"]["date_heure"].min()
     for name in FOLDS:
-        new = set(folds[name]["ID"])
-        assert not (ids & new), "un client dans deux plis : fuite"
-        ids |= new
-    for name in FOLDS:
+        a0, a1 = cfg["split"][name]
+        assert folds[name]["annee"].between(a0, a1).all()
         assert fold_hash(folds[name]) == EXPECTED[name], f"la coupe « {name} » a changé"

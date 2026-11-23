@@ -1,4 +1,4 @@
-"""Batch 2 : entraîner. Le modèle naïf et la logistique calibrée, sauvés dans models/.
+"""Batch 2 : entraîner. Le modèle naïf (J-7) et l'OLS, sauvés dans models/.
 
     python batch/train.py
 """
@@ -8,8 +8,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from credit.config import load_config  # noqa: E402
-from credit.model import baseline, naive, save_model  # noqa: E402
+from energie.config import load_config  # noqa: E402
+from energie.model import baseline, naive, save_model  # noqa: E402
 
 if __name__ == "__main__":
     cfg = load_config()

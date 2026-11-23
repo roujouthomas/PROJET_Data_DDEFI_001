@@ -84,7 +84,7 @@ L'erreur de la prévision J-1 de RTE a presque doublé depuis 2022 : environ 800
 - **Source principale** : RTE, *Données éCO₂mix nationales consolidées et définitives*, publiées sur la plateforme ODRE (jeu `eco2mix-national-cons-def`).
 - **Licence** : Licence Ouverte v2.0 (Etalab), réutilisation libre avec citation de la source.
 - **Période et volume** : du 1er janvier 2012 au 31 août 2026, au pas de 15 minutes, soit 514 272 lignes et 128 567 heures après agrégation, dont 14 heures sans consommation. Données définitives jusqu'à fin 2025, consolidées en 2026.
-- **Accès** : téléchargement par script (`src/chargement_donnees.py`), avec une empreinte SHA-256 du fichier brut pour figer la version.
+- **Accès** : téléchargement par script (`make data`, module `src/energie/data.py`), avec une empreinte SHA-256 pour figer la version (`data/README.md`).
 - **Données à ajouter** :
   - la **température**, principal moteur de la consommation (chauffage électrique) : source à choisir (**À COMPLÉTER** : Météo-France en open data ou Open-Meteo, avec leur licence) ;
   - le **calendrier** : jours fériés et vacances scolaires (données ouvertes de l'Éducation nationale sur data.gouv.fr).

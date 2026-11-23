@@ -1,4 +1,4 @@
-"""Batch 4 : évaluer. Les métriques des modèles sauvés sur la validation, dans metrics.json.
+"""Batch 4 : évaluer. Les métriques des modèles sauvés et de la référence RTE sur la validation, dans metrics.json.
 
     python batch/evaluate.py
 
@@ -11,12 +11,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from credit.config import ROOT, load_config  # noqa: E402
-from credit.evaluate import evaluate_models  # noqa: E402
+from energie.config import ROOT, load_config  # noqa: E402
+from energie.evaluate import evaluate_models, print_table  # noqa: E402
 
 if __name__ == "__main__":
     cfg = load_config()
     res = evaluate_models(cfg, "validation")
     (ROOT / "metrics.json").write_text(json.dumps(res, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    for name, m in res["modeles"].items():
-        print(f"{name:9s} AUC {m['auc']}  Brier {m['brier']}  coût/dossier {m['cout_attendu_par_dossier']} €")
+    print_table(res)

@@ -4,25 +4,25 @@ PY ?= python
 
 reproduce: data split train metrics
 
-data:            ## télécharge les données UCI et vérifie leur empreinte
-	$(PY) -m credit.data --check data/sha256.txt
+data:            ## télécharge éCO₂mix (RTE), agrège par heure, vérifie l'empreinte
+	$(PY) -m energie.data --check data/sha256.txt
 
-split:           ## la coupe figée par la graine de config.yaml
-	$(PY) -m credit.split --config config.yaml
+split:           ## la coupe figée par années : 2012-2023, 2024, 2025
+	$(PY) -m energie.split --config config.yaml
 
-train:           ## le modèle naïf et la logistique calibrée, seuil par les coûts
-	$(PY) -m credit.model --config config.yaml
+train:           ## le modèle naïf (J-7) et l'OLS
+	$(PY) -m energie.model --config config.yaml
 
 metrics:         ## les métriques sur la validation : metrics.json
-	$(PY) -m credit.evaluate --config config.yaml --out metrics.json
+	$(PY) -m energie.evaluate --config config.yaml --out metrics.json
 
 compare:         ## jalon 2 : les trois modèles sur le test, une seule fois : compare.json
-	$(PY) -m credit.compare --config config.yaml --out compare.json
+	$(PY) -m energie.compare --config config.yaml --out compare.json
 
-predict:         ## batch : scorer un CSV de clients (voir batch/predict.py)
+predict:         ## batch : prévoir les heures d'un CSV (voir batch/predict.py)
 	$(PY) batch/predict.py --in data/processed/validation.csv --out predictions.csv
 
-test:            ## les cinq tests
+test:            ## les tests
 	$(PY) -m pytest -q tests/
 
 app:             ## l'interface minimale

@@ -1,69 +1,77 @@
-"""Tests 3 à 5 : le code d'entraînement n'est pas cassé, la prédiction est stable, le modèle sauvé est le modèle entraîné."""
+"""Tests 4 à 8 : le code d'entraînement n'est pas cassé, la prédiction est stable, le modèle sauvé
+est le modèle entraîné, le naïf fait ce qu'il dit, l'OLS bat le naïf."""
 
 import pickle
 
 import numpy as np
 import pandas as pd
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import roc_auc_score
+from sklearn.linear_model import LinearRegression
 
-from credit.features import feature_columns, make_pipeline, split_xy
-from credit.model import BaseRate, MODELS_DIR, load_model
-from credit.split import load_fold
+from energie.evaluate import metrics
+from energie.features import lag_columns, make_pipeline, split_xy
+from energie.model import MODELS_DIR, SameHourLastWeek, load_model
+from energie.split import load_fold
 
 
-def _separable(cfg, n=400, seed=0):
-    """Des données artificielles où la cible se lit directement sur LIMIT_BAL : AUC doit valoir 1."""
+def _synthetic(cfg, n=2000, seed=0):
+    """Des données artificielles où la cible est exactement linéaire dans les variables."""
     rng = np.random.default_rng(seed)
-    cols = feature_columns(cfg)
-    df = pd.DataFrame({c: rng.integers(-1, 3, n) for c in cols})
-    df["EDUCATION"] = rng.integers(1, 4, n)
-    df["MARRIAGE"] = rng.integers(1, 3, n)
-    df["AGE"] = rng.integers(21, 70, n)
-    df["LIMIT_BAL"] = rng.uniform(10_000, 500_000, n)
-    df["default"] = (df["LIMIT_BAL"] > 250_000).astype(int)
+    df = pd.DataFrame({
+        "heure_type_jour": [f"{h:02d}_semaine" for h in rng.integers(0, 24, n)],
+        "mois": rng.integers(1, 13, n),
+    })
+    for c in lag_columns(cfg):
+        df[c] = rng.uniform(30_000, 90_000, n)
+    df["consommation"] = (
+        10_000 + 0.5 * df["conso_moins_168h"] + 0.3 * df["conso_moins_48h"]
+        + 100 * df["heure_type_jour"].str[:2].astype(int) + 50 * df["mois"]
+    )
     return df
 
 
-def test_auc_is_one_on_separable_data(cfg):
-    df = _separable(cfg)
+def _ols(cfg, df):
     X, y = split_xy(df, cfg)
-    pipe = make_pipeline(LogisticRegression(max_iter=2000, random_state=cfg["seed"]), cfg).fit(X, y)
-    assert roc_auc_score(y, pipe.predict_proba(X)[:, 1]) == 1.0
+    return make_pipeline(LinearRegression(), cfg).fit(X, y), X, y
+
+
+def test_ols_recovers_exact_linear_signal(cfg):
+    pipe, X, y = _ols(cfg, _synthetic(cfg))
+    # À l'arrondi près : moins d'un MW d'écart pour des consommations de l'ordre de 70 000 MW.
+    assert np.max(np.abs(pipe.predict(X) - y)) < 1.0
 
 
 def test_predict_invariant_to_row_permutation(cfg):
-    df = _separable(cfg, seed=1)
-    X, y = split_xy(df, cfg)
-    pipe = make_pipeline(LogisticRegression(max_iter=2000, random_state=cfg["seed"]), cfg).fit(X, y)
+    pipe, X, _ = _ols(cfg, _synthetic(cfg, seed=1))
     perm = np.random.default_rng(2).permutation(len(X))
-    p1 = pipe.predict_proba(X)[:, 1][perm]
-    p2 = pipe.predict_proba(X.iloc[perm])[:, 1]
-    assert np.allclose(p1, p2)
+    assert np.allclose(pipe.predict(X)[perm], pipe.predict(X.iloc[perm]))
 
 
 def test_loaded_pipeline_matches_trained(cfg, tmp_path):
-    df = _separable(cfg, seed=3)
-    X, y = split_xy(df, cfg)
-    pipe = make_pipeline(LogisticRegression(max_iter=2000, random_state=cfg["seed"]), cfg).fit(X, y)
+    pipe, X, _ = _ols(cfg, _synthetic(cfg, seed=3))
     path = tmp_path / "m.pkl"
-    with open(path, "wb") as f:
-        pickle.dump(pipe, f)
-    with open(path, "rb") as f:
-        again = pickle.load(f)
-    assert np.max(np.abs(pipe.predict_proba(X) - again.predict_proba(X))) < 1e-12
+    path.write_bytes(pickle.dumps(pipe))
+    again = pickle.loads(path.read_bytes())
+    assert np.max(np.abs(pipe.predict(X) - again.predict(X))) < 1e-9
 
 
-def test_naive_predicts_base_rate(cfg):
-    y = np.array([0, 0, 0, 1])
-    m = BaseRate().fit(np.zeros((4, 1)), y)
-    assert np.allclose(m.predict_proba(np.zeros((3, 1)))[:, 1], 0.25)
+def test_naive_returns_same_hour_last_week(cfg):
+    X, _ = split_xy(_synthetic(cfg, n=10), cfg)
+    assert np.array_equal(SameHourLastWeek().fit(X).predict(X), X["conso_moins_168h"].to_numpy())
+
+
+def test_metrics_on_a_known_case():
+    m = metrics([100, 100, 100, 100], [90, 110, 100, 120], ratio=3.0)
+    assert m["mae_mw"] == 10.0 and m["biais_mw"] == 5.0 and m["part_sous_estimee"] == 0.25
+    # sous-estimation de 10 pondérée 3 fois : (30 + 10 + 0 + 20) / 4 = 15
+    assert m["cout_asymetrique"] == 15.0
 
 
 def test_baseline_beats_naive_on_validation(cfg):
-    """Si make train a tourné : la logistique doit battre nettement le taux de base, sinon fuite ou bug."""
+    """Si make train a tourné : l'OLS doit battre nettement le naïf, sinon bug ou fuite."""
     if not (MODELS_DIR / "baseline.pkl").exists():
-        return  # pas encore entraîné (CI sans make train) : rien à vérifier
-    X, y = split_xy(load_fold("validation"), cfg)
-    p = load_model("baseline").predict_proba(X)[:, 1]
-    assert roc_auc_score(y, p) > 0.70
+        return  # pas encore entraîné : rien à vérifier
+    df = load_fold("validation")
+    X, y = split_xy(df, cfg)
+    mae_naif = metrics(y, load_model("naive").predict(X))["mae_mw"]
+    mae_ols = metrics(y, load_model("baseline").predict(X))["mae_mw"]
+    assert mae_ols < 0.9 * mae_naif
