@@ -218,3 +218,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Données brutes : téléchargées par script (src/chargement_donnees.py), jamais versionnées
+data/raw/
