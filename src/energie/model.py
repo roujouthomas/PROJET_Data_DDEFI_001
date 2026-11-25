@@ -4,7 +4,7 @@
               ne le bat pas nettement, il y a un bug ou une fuite.
   meilleur  : une régression linéaire (OLS) sur le calendrier (heure × type de jour, mois) et les
               consommations passées, dans un Pipeline appris sur l'entraînement seulement.
-  lourd     : à vous (jalon 2). La fonction heavy() dit quoi faire et refuse de tourner tant qu'elle
+  lourd     : un XGBoost, au rendu final. La fonction heavy() dit quoi faire et refuse de tourner tant qu'elle
               n'est pas écrite. Ne la copiez pas d'un assistant sans pouvoir l'expliquer ligne par ligne.
   référence : la prévision J-1 publiée par RTE (colonne prevision_j1). C'est le seuil d'utilité du
               cahier des charges : un modèle qui ne la bat pas ne sert pas le décideur.
@@ -60,8 +60,7 @@ def heavy(cfg: dict):
     """Le modèle lourd : jalon 2, à vous.
 
     Ce qu'on attend (cahier des charges, ligne 6) :
-      1. un gradient boosting dans le même make_pipeline() : XGBRegressor (déjà dans requirements.lock),
-         ou LightGBM après l'avoir ajouté à requirements.in puis régénéré le lock ; random_state=cfg["seed"] ;
+      1. un XGBRegressor (déjà dans requirements.lock) dans le même make_pipeline(), random_state=cfg["seed"] ;
       2. ses hyperparamètres choisis par validation croisée temporelle sur le pli d'entraînement
          SEULEMENT (TimeSeriesSplit, jamais KFold mélangé) ;
       3. la règle du champion écrite dans DECISIONS.md AVANT de lancer make compare ;

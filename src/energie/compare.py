@@ -12,8 +12,7 @@ import json
 from pathlib import Path
 
 from energie.config import ROOT, load_config
-from energie.data import REFERENCE
-from energie.evaluate import metrics, print_table
+from energie.evaluate import metrics, print_table, references
 from energie.features import split_xy
 from energie.model import heavy, load_model, save_model
 from energie.split import load_fold
@@ -35,7 +34,7 @@ def main(cfg: dict, out: Path) -> dict:
         hv = heavy(cfg)  # lève NotImplementedError tant que le jalon 2 n'est pas fait
         save_model(hv, "heavy")
     out_d["modeles"]["heavy"] = metrics(y, hv.predict(X), ratio)
-    out_d["modeles"]["reference_rte_j1"] = metrics(y, df[REFERENCE], ratio)
+    out_d["modeles"].update(references(df, y, cfg, "test", ratio))
     out.write_text(json.dumps(out_d, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     return out_d
 

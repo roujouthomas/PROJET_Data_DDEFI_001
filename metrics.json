@@ -32,6 +32,16 @@
       "biais_mw": -1146.2,
       "part_sous_estimee": 0.8155,
       "cout_asymetrique": null
+    },
+    "reference_rte_j1_corrigee": {
+      "n_heures": 8781,
+      "mae_mw": 1039.4,
+      "mae_pct": 2.07,
+      "rmse_mw": 1343.4,
+      "biais_mw": -15.3,
+      "part_sous_estimee": 0.4976,
+      "cout_asymetrique": null,
+      "correction_mw": 1130.8
     }
   }
 }

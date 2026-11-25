@@ -1,6 +1,6 @@
 # PROJET_Data_DDEFI_001
 
-groupe 123456
+Groupe 8
 
 Thomas Roujou : Chef (ML specialist)
 Thomas Traineau : Chef plus petit (IA specialist)
@@ -55,8 +55,8 @@ Si ce n'est pas le cas, l'un des quatre a bougé : données, code, graine, envir
 |---|---|---|---|
 | naïf | la consommation de la même heure une semaine avant | `energie.model.naive` | fait |
 | meilleur | régression linéaire (OLS) : heure × type de jour, mois, consommations à J-2 et J-7 | `energie.model.baseline` | fait, à enrichir (température) |
-| lourd | gradient boosting comparé honnêtement | `energie.model.heavy` | **à faire**, jalon 2 |
-| référence | la prévision J-1 publiée par RTE | colonne `prevision_j1` | le seuil d'utilité à battre |
+| lourd | XGBoost comparé honnêtement à l'OLS | `energie.model.heavy` | **à faire**, rendu final |
+| référence | la prévision J-1 publiée par RTE, brute et corrigée de son écart moyen de l'année précédente | colonne `prevision_j1` | le seuil d'utilité à battre |
 
 Sur la validation (2024, `metrics.json`) :
 
@@ -64,10 +64,13 @@ Sur la validation (2024, `metrics.json`) :
 |---|---|---|---|
 | Naïf (J-7) | 3 247 MW (6,5 %) | −163 MW | 49 % |
 | OLS, sans température | 2 388 MW (4,8 %) | +860 MW | 38 % |
-| **Prévision J-1 de RTE** | **1 428 MW (2,9 %)** | −1 146 MW | 82 % |
+| Prévision J-1 de RTE, brute | 1 428 MW (2,9 %) | −1 146 MW | 82 % |
+| **Prévision J-1 de RTE, corrigée** | **1 039 MW (2,1 %)** | −15 MW | 50 % |
 
 L'OLS bat nettement le naïf (le test `test_gain_over_naive_is_not_luck` le vérifie par bootstrap sur les jours),
-mais pas encore RTE. Il lui manque la température, premier moteur de la consommation (cahier des charges, ligne 5).
+mais pas encore RTE. Il lui manque la température, premier moteur de la consommation (cahier des charges, section 5).
+La prévision brute de RTE est environ 1 100 MW sous le réalisé depuis 2023, de façon systématique (cahier des charges, section 3) :
+la vraie barre est la prévision corrigée de cet écart, mesuré sur l'année précédente.
 
 ## Règles du dépôt
 
